@@ -1,29 +1,27 @@
 import requests
 from bs4 import BeautifulSoup
-product_code = input("Podaj kod produktu: ")
+#product_code = input("Podaj kod produktu: ")
+product_code = "58835954"
 url = f"https://www.ceneo.pl/{product_code}#tab=reviews"
 response = requests.get(url)
 if response.status_code == requests.codes.ok:
     page_dom = BeautifulSoup(response.text, 'html.parser')
     opinions = page_dom.select("div.js_product-review")
-    print(type(opinions))
-    if len(opinions) > 0:
-        opinions_all = []
-        for opinion in opinions:
+    opinions_all = []
+    for opinion in opinions:
             single_opinion = {
-                #"opinion_id": page_dom.css.select(".user-post__author-name"),
-                "author": page_dom.css.select(".user-post__author-name"),
-                "recommendation": page_dom.css.select(".user-post__author-recomendation"),
-                "stars": page_dom.css.select(".user-post__score-count"),
-                "purchased": page_dom.css.select(".review-pz"),
-                #"opinion_date": page_dom.css.select(".user-post__author-name"),
-                #"purchase_date": page_dom.css.select(".user-post__author-name"),
-                #"useful_count": page_dom.css.select(".user-post__author-name"),
-                #"unuseful_count": page_dom.css.select(".user-post__author-name"),
-                #"content": page_dom.css.select(".user-post__author-name"),
-                #"pros": page_dom.css.select(".user-post__author-name"),
-                #"cons": page_dom.css.select(".user-post__author-name")
+                "opinion_id": opinion["data-entry-id"],
+                "author": opinion.select_one("span.user-post__author-name").get_text().strip(),
+                "recommendation": opinion.select_one("span.user-post__author-recomendation > em").get_text().strip(),
+                "stars": opinion.select_one("span.user-post__score-count").get_text().strip(),
+                "purchased": opinion.select_one("div.review-pz").get_text().strip(),
+                "opinion_date": opinion.select_one("span.user-post__published > time:nth-child(1)")["datetime"].strip(),
+                "purchase_date": opinion.select_one("span.user-post__published > time:nth-child(2)")["datetime"].strip(),
+                "useful_count": opinion.select_one("button.vote-yes")["data-total-vote"].strip(),
+                "unuseful_count": opinion.select_one("button.vote-no")["data-total-vote"].strip(),
+                "content": opinion.select_one("div.user-post__text").get_text().strip(),
+                "pros": [p.get_text().strip for p in opinion.select("div.review-feature__title--positives ~ div.review-feature__item")],
+                "cons": [c.get_text().strip for c in opinion.select("div.review-feature__title--negatives ~ div.review-feature__item")]
             }
-        print(single_opinion["author"])
-    else:
-        print("Nie ma opinii")
+            opinions_all.append(single_opinion)
+    print(opinions_all)
